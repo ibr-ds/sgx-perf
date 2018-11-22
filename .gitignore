@@ -1,0 +1,13 @@
+.idea/
+build/
+__pycache__/
+venv/
+
+.so
+.a
+.o
+.i
+
+enclave_u.*
+enclave_t.*
+enclave.pem

@@ -1,0 +1,14 @@
+enclave {
+    from "sgx_tstdc.edl" import *;
+
+    trusted {
+        public void ecall_single();
+        public void ecall_with_ocall();
+        public void ecall_long();
+    };
+
+    untrusted {
+        void ocall_single();
+        void ocall_print_string([in, string] const char *str);
+    };
+};
