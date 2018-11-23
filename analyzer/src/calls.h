@@ -44,6 +44,8 @@ typedef struct __stats_data
 	uint64_t median;
 	uint64_t std;
 	uint64_t aexs;
+	uint64_t min;
+	uint64_t max;
 	uint64_t num_less_1us;
 	uint64_t num_less_5us;
 	uint64_t num_less_10us;
@@ -82,6 +84,7 @@ typedef struct __call_data
 	bool has_indirect_parents;
 	std::vector<parent_call_data_t> *indirect_parents_data;
 	stats_t all_stats;
+	stats_t aex_stats;
 	stats_t stats_95th;
 } call_data_t;
 

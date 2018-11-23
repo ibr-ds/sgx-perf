@@ -28,7 +28,7 @@ Limitations
 
 - The logger and working set analyzer only intercept `sgx_create_enclave` and NOT `sgx_create_enclave_ex`.
 - SGXv2 features are not supported.
-- The analyzer does not look at paging and AEX events, yet.
+- The analyzer does not look at paging events, yet.
 - The analyzer does not look at EDL imports, when given an EDL.
 - Logger supports multiple enclaves in the same applications, but analyzer not really
 - Logger might not be thread-safe

@@ -360,6 +360,28 @@ static void calc_stats(stats_t &s, call_data_t *c)
 	}
 }
 
+static void calc_aex_stats(stats_t &s, call_data_t *c)
+{
+	s.calls = c->aex_counts->size();
+	if (s.calls == 0)
+	{
+		return;
+	}
+
+	s.sum = std::accumulate(c->aex_counts->begin(), c->aex_counts->begin() + s.calls, 0UL);
+	s.min = *std::min_element(c->aex_counts->begin(), c->aex_counts->begin() + s.calls);
+	s.max = *std::max_element(c->aex_counts->begin(), c->aex_counts->begin() + s.calls);
+
+	if (c->aex_counts != nullptr)
+	{
+		s.avg = s.sum / s.calls;
+		std::vector<int64_t> diff(s.calls);
+		std::transform(c->aex_counts->begin(), c->aex_counts->begin() + s.calls, diff.begin(), [&s](uint64_t x) { return x - s.avg; });
+		s.sq_sum = (uint64_t)std::inner_product(diff.begin(), diff.end(), diff.begin(), 0L);
+		s.std = (uint64_t)std::sqrt(s.sq_sum / s.calls);
+	}
+}
+
 static bool batch_opportunity(parent_call_data_t &pcd)
 {
 	// check for batching opportunities
@@ -485,9 +507,9 @@ void print_call_data(enclave_data_t &e, call_data_t *c, uint64_t print_min)
 			std::cout << "| | | # < 1µs: " << countformat(c->stats_95th.num_less_1us, c->stats_95th.calls, true) << std::endl;
 		std::cout << "| | | # < 5µs: " << countformat(c->stats_95th.num_less_5us, c->stats_95th.calls, true) << std::endl;
 		std::cout << "| | | # < 10µs: " << countformat(c->stats_95th.num_less_10us, c->stats_95th.calls, true) << std::endl;
-		std::cout << "| |" << std::endl;
 		if (c->type == call_type_t::OCALL || c->num_ecall_called_from_ocalls > 0)
 		{
+			std::cout << "| |" << std::endl;
 			std::cout << "| | Direct successor of" << std::endl;
 			std::for_each(c->direct_parents_data->begin(), c->direct_parents_data->end(), [c](parent_call_data_t &pc) {
 				if (pc.call_data == nullptr)
@@ -511,9 +533,19 @@ void print_call_data(enclave_data_t &e, call_data_t *c, uint64_t print_min)
 				std::cout << "| | |" << std::endl;
 			});
 		}
-		std::cout << "| |" << std::endl;
+
+		if (c->type == call_type_t::ECALL && !c->aex_counts->empty())
+		{
+			std::cout << "| |" << std::endl;
+			std::cout << "| | # AEX during all calls: " << c->aex_stats.sum << std::endl;
+			std::cout << "| | Ø AEX count per call: " << c->aex_stats.avg << " ± " << c->aex_stats.std << std::endl;
+			std::cout << "| | Highest AEX count: " << c->aex_stats.max << std::endl;
+			std::cout << "| | Lowest AEX count: " << c->aex_stats.min << std::endl;
+		}
+
 		if (c->has_indirect_parents)
 		{
+			std::cout << "| |" << std::endl;
 			std::cout << "| | Indirect successor of" << std::endl;
 			std::for_each(c->indirect_parents_data->begin(), c->indirect_parents_data->end(), [c](parent_call_data_t &pc) {
 				if (pc.call_data == nullptr)
@@ -740,6 +772,7 @@ void analyze_calls()
 
 			std::sort(c->exectimes->begin(), c->exectimes->end());
 			calc_stats(c->all_stats, c);
+			calc_aex_stats(c->aex_stats, c);
 
 			c->stats_95th.calls = percentile_idx(95 / 100.0, c->exectimes);
 			c->stats_95th.sum = std::accumulate(c->exectimes->begin(), c->exectimes->begin() + c->stats_95th.calls, 0UL);
