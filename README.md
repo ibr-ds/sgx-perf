@@ -1,6 +1,11 @@
 sgx-perf
 ========
 
+Paper
+-----
+
+The paper will be presented at Middleware 2018 and is available here: https://www.ibr.cs.tu-bs.de/users/weichbr/papers/middleware2018.pdf
+
 Prerequisites
 --------------
 
