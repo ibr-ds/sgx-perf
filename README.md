@@ -27,7 +27,7 @@ If you have built the SDK/PSW from source, you need to disable stripping of the 
 sgx-perf needs to access some PSW internal functions that are not exported by the URTS to find enclave start and end addresses.
 Furthermore, you need `libelf`. 
 
-Working set analysis of big enclaves (>60000 pages, ) requires a high value of `vm.max_map_count` as the working set analyser cuts up the enclave mappings into one mapping per enclave page.
+Working set analysis of big enclaves (>60000 pages) requires a high value of `vm.max_map_count` as the working set analyser cuts up the enclave mappings into one mapping per enclave page.
 Set it with `sysctl -w vm.max_map_count=2147483647` to `INT_MAX`.
 
 Warning: It is possible, to set it to zero. Setting it to 4294967296/`UINT_MAX` is interpreted as zero.
