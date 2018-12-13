@@ -4,7 +4,19 @@ sgx-perf
 Paper
 -----
 
-The paper will be presented at Middleware 2018 and is available here: https://www.ibr.cs.tu-bs.de/users/weichbr/papers/middleware2018.pdf
+The paper will be presented at Middleware 2018 and is available here: https://www.ibr.cs.tu-bs.de/users/weichbr/papers/middleware2018.pdf and https://dl.acm.org/citation.cfm?id=3274824
+
+Please cite us if you use our work in your research:
+```
+@inproceedings{weichbrodt2018middleware,
+ author = {Weichbrodt, Nico and Aublin, Pierre-Louis and Kapitza, R\"{u}diger},
+ title = {{sgx-perf: A Performance Analysis Tool for Intel SGX Enclaves}},
+ booktitle = {Proceedings of the 19th International Middleware Conference},
+ series = {Middleware '18},
+ year = {2018},
+ doi = {10.1145/3274808.3274824},
+}
+```
 
 Prerequisites
 --------------
