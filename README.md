@@ -72,10 +72,10 @@ Furthermore, you can send a `SIGUSR1` to an application currently analysed by th
 to print the current counters and reset them.
 This allows you to pick a certain window for analysis, e.g., to exclude a warm-up time.
 
-.sgx-perf
+.sgxperf
 ---------
 
-The logger tries to load the config file `.sgxperf` in the same directory.
+The logger tries to load the config file `.sgxperf` in the current working directory.
 The config file uses INI style.
 
 Example:
