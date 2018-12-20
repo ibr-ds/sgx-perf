@@ -2,6 +2,8 @@
  * @author weichbr
  */
 
+//#define DEBUG
+
 #include <cstdint>
 #include <cstdlib>
 #include <iostream>
@@ -63,6 +65,11 @@ public:
 	bool is_within_lifetime(uint64_t time)
 	{
 		return creation_time <= time && time <= destruction_time;
+	}
+
+	bool is_alive()
+	{
+		return destruction_time == UINT64_MAX;
 	}
 
 	void reset_page_counter()
@@ -230,15 +237,24 @@ void handler(int signum, siginfo_t *siginfo, void *context)
 			if (!__atomic_test_and_set(encl->page_status+page_offset, __ATOMIC_RELAXED))
 			{
 				// Setting all permissions is fine, as the real permissions are enforced by SGX
+#ifdef DEBUG
+				printf("restoring perms @ %p\n", page_addr);
+#endif
 				mprotect(page_addr, PAGE_SIZE, PROT_READ | PROT_WRITE | PROT_EXEC);
 			}
+#ifdef DEBUG
+			else
+			{
+				printf("segfault at already regiven page\n");
+			}
+#endif
 			read_unlock(&enclaves_lock);
 			return;
 		}
 		it++;
 	}
 	read_unlock(&enclaves_lock);
-
+	printf("Segfault not in enclave range, calling old handler\n");
 	old_handlers[signum](signum, siginfo, context);
 }
 
@@ -398,17 +414,22 @@ int main(int argc, char** argv)
 void print_summary()
 {
 	std::cout << "=== Workingset overview" << std::endl;
+	read_lock(&enclaves_lock);
 	auto it = enclaves->begin();
 	while (it != enclaves->end())
 	{
 		auto encl = *it;
 		encl->update_page_counter();
 		uint64_t bytes = encl->page_counter * PAGE_SIZE;
-
+		if (!encl->is_alive())
+		{
+			std::cout << "DEAD ";
+		}
 		std::cout << "Enclave " << encl->eid << ": " << encl->page_counter << " Pages = " << bytes << "B (~" << bytes/1024.0/1024.0 << "MiB)" << std::endl;
 
 		it++;
 	}
+	read_unlock(&enclaves_lock);
 }
 
 /**
@@ -430,14 +451,26 @@ void sigint(int signum, siginfo_t *siginfo, void *context)
 	exit(0);
 }
 
+static void register_signal_handlers()
+{
+	struct sigaction sig_act = {};
+	// Register signal handlers
+	sig_act.sa_sigaction = handler;
+	sig_act.sa_flags = SA_SIGINFO | SA_NODEFER | SA_RESTART;
+	sigaction(SIGSEGV, &sig_act, nullptr);
+	sig_act.sa_sigaction = sigint;
+	sigaction(SIGINT, &sig_act, nullptr);
+
+	sig_act.sa_sigaction = reset_handler;
+	sigaction(SIGUSR1, &sig_act, nullptr);
+}
+
 /**
  * @brief Constructor
  */
 __attribute__((constructor))
 static void initialize()
 {
-	struct sigaction sig_act = {};
-
 	std::cout << "=== Initializing working set analyzer" << std::endl;
 	if (initialize_urts_calls() < 0)
 	{
@@ -450,15 +483,7 @@ static void initialize()
 
 	enclaves = new std::vector<Enclave *>();
 
-	// Register signal handlers
-	sig_act.sa_sigaction = handler;
-	sig_act.sa_flags = SA_SIGINFO | SA_NODEFER | SA_RESTART;
-	sigaction(SIGSEGV, &sig_act, nullptr);
-	sig_act.sa_sigaction = sigint;
-	sigaction(SIGINT, &sig_act, nullptr);
-
-	sig_act.sa_sigaction = reset_handler;
-	sigaction(SIGUSR1, &sig_act, nullptr);
+	register_signal_handlers();
 
 	printf("=== Done initializing\n");
 	return;
@@ -466,4 +491,26 @@ static void initialize()
 	initerror:
 	std::cout << "!!! Error initializing!" << std::endl;
 	exit(-1);
+}
+
+extern "C" void ws_init(int eid, void *start, uint64_t size)
+{
+	write_lock(&enclaves_lock);
+	if (enclaves == nullptr)
+	{
+		enclaves = new std::vector<Enclave *>();
+		register_signal_handlers();
+	}
+	write_unlock(&enclaves_lock);
+
+	auto encl = new Enclave(eid, start, size);
+	struct timespec t = {};
+	clock_gettime(CLOCK_MONOTONIC_RAW, &t);
+	encl->creation_time = static_cast<uint64_t>(t.tv_sec * 1000000000 + t.tv_nsec);
+
+	mprotect(encl->encl_start, encl->size, PROT_NONE);
+
+	write_lock(&enclaves_lock);
+	enclaves->push_back(encl);
+	write_unlock(&enclaves_lock);
 }
