@@ -264,20 +264,23 @@ void reset_handler(int signum, siginfo_t *siginfo, void *context)
 {
 	(void)context;
 	(void)siginfo;
-	if (signum != SIGUSR1)
+	if (signum != SIGUSR1 && signum != SIGUSR2)
 		return;
 
 	write_lock(&enclaves_lock);
 
 	print_summary();
 
-	auto it = enclaves->begin();
-	while (it != enclaves->end())
+	if (signum == SIGUSR1)
 	{
-		auto encl = *it;
-		encl->reset_page_counter();
-		mprotect(encl->encl_start, encl->size, PROT_NONE);
-		it++;
+		auto it = enclaves->begin();
+		while (it != enclaves->end())
+		{
+			auto encl = *it;
+			encl->reset_page_counter();
+			mprotect(encl->encl_start, encl->size, PROT_NONE);
+			it++;
+		}
 	}
 	write_unlock(&enclaves_lock);
 
@@ -332,7 +335,7 @@ extern "C" int sigaction(int signum, const struct sigaction *act, struct sigacti
 			return 0;
 		}
 	}
-	else if (signum == SIGUSR1)
+	else if (signum == SIGUSR1 || signum == SIGUSR2)
 	{
 		if (act && act->sa_sigaction == reset_handler)
 		{
@@ -375,7 +378,7 @@ extern "C" __sighandler_t signal(int signum, __sighandler_t _handler)
 			return (__sighandler_t)old_handlers[signum];
 		}
 	}
-	else if (signum == SIGUSR1)
+	else if (signum == SIGUSR1 || signum == SIGUSR2)
 	{
 		if (_handler == (__sighandler_t)reset_handler)
 		{
@@ -463,6 +466,7 @@ static void register_signal_handlers()
 
 	sig_act.sa_sigaction = reset_handler;
 	sigaction(SIGUSR1, &sig_act, nullptr);
+	sigaction(SIGUSR2, &sig_act, nullptr);
 }
 
 /**
