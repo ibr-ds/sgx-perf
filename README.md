@@ -123,3 +123,24 @@ The `plot-all.bash` script will look for a folder called `folder-name-data` and 
 Print narrowest ocall EDL signatures based on the gathered data:
 
     ./analyzer -i /path/to/out-<pid>.db
+
+
+Integrate working set analyser in non-SDK applications
+------------------------------------------------------
+
+The workingset analyser can be integrated into non-SDK applications.
+For example, for a dynamic integration do something like this:
+
+    char* error = dlerror();
+    // ws_init is exposed by the working set analyser
+    int (*ws_init)(int eid, char* start, size_t size) = dlsym(RTLD_DEFAULT,
+    "ws_init");
+    if (error = dlerror()) {
+        // No workingset analyser found
+        fprintf(stderr, "Could not find ws_init(). (%s)\n", error);
+    } else {
+        // ws_init needs an enclave id, start of the enclave and its size
+        ws_init(0, enclave_base_addr, enclave_size_in_bytes);
+    }
+
+
