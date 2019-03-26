@@ -84,7 +84,7 @@ void sgxperf::EventStore::sql_exec(std::stringstream &ss)
 }
 
 
-sgxperf::EventStore::EventStore() : enclave_map_lock({}), enclave_map(), tcs_map(), thread_id(0), db(nullptr), thread_events_lock({}), thread_events(), finalized(false), main_thread(nullptr)
+sgxperf::EventStore::EventStore() : enclave_map_lock({}), enclave_map(), tcs_map_lock({}), tcs_map(), thread_id(0), db(nullptr), thread_events_lock({}), thread_events(), finalized(false), main_thread(nullptr)
 {
 	timespec t = {};
 	clock_gettime(CLOCK_MONOTONIC_RAW, &t);
