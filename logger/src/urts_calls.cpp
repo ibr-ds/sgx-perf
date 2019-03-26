@@ -63,6 +63,12 @@ int initialize_urts_calls()
 
 	real_sgx_thread_wait_untrusted_event_ocall = (int (*)(const void *self))dlsym(RTLD_NEXT, "sgx_thread_wait_untrusted_event_ocall");
 	real_sgx_thread_set_untrusted_event_ocall = (int (*)(const void *self))dlsym(RTLD_NEXT, "sgx_thread_set_untrusted_event_ocall");
+	
+	if (real_sgx_thread_wait_untrusted_event_ocall == nullptr || real_sgx_thread_set_untrusted_event_ocall == nullptr)
+	{
+		printf("!!! Could not get untrusted thread synchronization ocalls \n");
+		return -1;
+	}
 
 	// Patch AEP if we are in HW mode
 	if (is_hw_mode() && config->is_aex_counting_enabled())
@@ -78,12 +84,27 @@ int initialize_urts_calls()
 
 	// First, get the CEnclavePool instance
 	auto cenclpoolinst_addr = get_address_for_symbol(bin, cenclpoolinst_sym);
+	if (cenclpoolinst_addr == nullptr)
+	{
+		printf("!!! Could not get CEnclavePool::instance(). Check urts for stripped symbols\n");
+		return -1;
+	}
 	cenclavepoolinstance = (CEnclavePoolInstance)((uint64_t)dl_info.dli_fbase + (uint64_t)cenclpoolinst_addr);
 
 	auto cenclpoolgetevent_addr = get_address_for_symbol(bin, cenclpoolgetevent_sym);
+	if (cenclpoolgetevent_addr == nullptr)
+	{
+		printf("!!! Could not get CEnclavePool::getEvent(). Check urts for stripped symbols\n");
+		return -1;
+	}
 	cenclavepoolgetevent = (CEnclavePoolGetEvent)((uint64_t)dl_info.dli_fbase + (uint64_t)cenclpoolgetevent_addr);
 
 	auto cenclpoolgetencl_addr = get_address_for_symbol(bin, cenclpoolgetencl_sym);
+	if (cenclpoolgetencl_addr == nullptr)
+	{
+		printf("!!! Could not get CEnclavePool::getEnclave(). Check urts for stripped symbols\n");
+		return -1;
+	}
 	cenclavepoolgetenclave = (CEnclavePoolGetEnclave)((uint64_t)dl_info.dli_fbase + (uint64_t)cenclpoolgetencl_addr);
 
 	return 0;
