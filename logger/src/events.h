@@ -66,14 +66,15 @@ namespace sgxperf
  */
 	class Event
 	{
+	private:
+		timespec temp;
 	public:
 		Event()
 				: thread(pthread_self()), thread_id(UINT64_MAX), sql_id(UINT64_MAX),
 				  core(static_cast<uint32_t>(sched_getcpu()))
 		{
-			timespec t = {};
-			clock_gettime(CLOCK_MONOTONIC_RAW, &t);
-			time = static_cast<uint64_t>(t.tv_nsec + t.tv_sec * 1000000000);
+			clock_gettime(CLOCK_MONOTONIC_RAW, &temp);
+			time = static_cast<uint64_t>(temp.tv_nsec + temp.tv_sec * 1000000000);
 		}
 
 		virtual ~Event() = default;
