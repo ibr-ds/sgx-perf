@@ -22,10 +22,10 @@ Prerequisites
 --------------
 
 sgx-perf was tested with the official Intel SGX SDK version 1.9 and 2.3. It should also works with other versions.
-It requires the non-stripped PSW libraries (if you install the prebuild packages, you're fine).
-If you have built the SDK/PSW from source, you need to disable stripping of the binary.
+It requires the non-stripped PSW libraries ~~(if you install the prebuild packages, you're fine).~~ The prebuilt packages also seem to be stripped now.
+If you have built the SDK/PSW from source, you need to disable stripping of the binary using a environment variable: `export DEB_BUILD_OPTIONS="nostrip"` (see #3)
 sgx-perf needs to access some PSW internal functions that are not exported by the URTS to find enclave start and end addresses.
-Furthermore, you need `libelf`. 
+Furthermore, you need `libelf`.
 
 Working set analysis of big enclaves (>60000 pages) requires a high value of `vm.max_map_count` as the working set analyser cuts up the enclave mappings into one mapping per enclave page.
 Set it with `sysctl -w vm.max_map_count=2147483647` to `INT_MAX`.
@@ -44,6 +44,7 @@ Limitations
 - The analyzer does not look at EDL imports, when given an EDL.
 - Logger supports multiple enclaves in the same applications, but analyzer not really
 - Logger might not be thread-safe
+- Tracing of AEX events seems to be broken with newer versions of the SDK, counting might still work.
 
 How to build
 ------------
